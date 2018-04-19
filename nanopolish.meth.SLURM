@@ -24,14 +24,14 @@ exp=180405_bcpap2
 
 #NOTE: there can only be one fastq in the specififed 'np' folder below!!
 ml samtools 
-#echo 'starting alignment'
-#~/dl/minimap2/minimap2 -a -x map-ont $refd/chr5.fa $myd/np/*.fastq | \
-#  samtools sort -T ${exp}_tmp -o $myd/np/${exp}.bam
+echo 'starting alignment'
+~/dl/minimap2/minimap2 -a -x map-ont $refd/chr5.fa $myd/np/*.fastq | \
+  samtools sort -T ${exp}_tmp -o $myd/np/${exp}.bam
 
-#samtools index $myd/np/${exp}.bam
+samtools index $myd/np/${exp}.bam
 
 
-#echo 'time after making/sorting bam:'
+echo 'time after making/sorting bam:'
 echo `date +%d/%m/%Y\ %H:%M:%S`
 echo 'building index'
 
