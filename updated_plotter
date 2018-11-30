@@ -1,0 +1,174 @@
+### plots both nanopolish data ( after extraction as described in reade) 
+### also pplots bisulfite data .. used the "xxx.cov" file produced in bismark analysis 
+
+capture.output( suppressMessages(library(tidyverse)))
+capture.output( suppressMessages(library(cowplot)))
+library(bsseq)
+library(GenomicRanges)
+
+###############
+#
+#   Read in Nanopore Files 
+################
+
+getwd()
+list.files('npdata')
+#reading in CpG-specific methylation data 
+#cpg_files=list.files(file.path('npdata'), pattern= "*.tsv", full.names=T)
+exp_name='both'
+
+meth_nrml=read_tsv('npdata/181103_normal_cpgMeth.tsv', col_names=c('hg19_cood', 'meth', 'cov'))
+meth_bcpap=read_tsv('npdata/181101_bcpap_cpgMeth.tsv', col_names=c('hg19_cood', 'meth', 'cov'))
+meth_tpc1=read_tsv('npdata/181115_tpc1_cpgMeth.tsv', col_names=c('hg19_cood', 'meth', 'cov'))
+#meth_ftc133=read_tsv('npdata/180921_ftc133_cpgMeth.tsv', col_names=c('hg19_cood', 'meth', 'cov'))
+#meth_ftc238=read_tsv('npdata/181115_ftc238_cpgMeth.tsv', col_names=c('hg19_cood', 'meth', 'cov'))
+#meth_wro=read_tsv('npdata/181025_wro_cpgMeth.tsv', col_names=c('hg19_cood', 'meth', 'cov'))
+
+###
+#  filter for sufficient cov 
+min_np_cov = 10 
+
+meth_nrml <- subset(meth_nrml, cov >= min_np_cov )
+meth_bcpap <- subset(meth_bcpap, cov >= min_np_cov )
+meth_tpc1 <- subset(meth_tpc1, cov >= min_np_cov )
+#meth_ftc133 <- subset(meth_ftc133, cov >= min_np_cov )
+#meth_ftc238 <- subset(meth_ftc238, cov >= min_np_cov )
+#meth_wro <- subset(meth_wro, cov >= min_np_cov )
+
+################
+############## 
+# Read in illumina BS-amplicon Data #
+#####
+###########
+
+baavindir="cov"
+outdir="OUT"
+
+tertpromoter=GRanges(seqnames="chr5", ranges=IRanges(start=1294429, end=1294448))
+tertpromoter=resize(tertpromoter, width=8e3, fix="center")
+
+mincov=10
+list.files(baavindir)
+IDs=c("N1", "N2", "N3")
+nrml_DATA=read.bismark(files=file.path(baavindir, paste0(IDs, ".bismark.mod.cov")), sampleNames=IDs,
+                       rmZeroCov=TRUE, fileType="cov", strandCollapse=FALSE)
+inregion=overlapsAny(granges(nrml_DATA), tertpromoter, type="within")
+goodcov=rowSums(getCoverage(nrml_DATA, type="Cov", what="perBase")>mincov)   #==3
+nrml_TERT=nrml_DATA[(inregion & goodcov),]
+nrml_METH=as.tibble(getMeth(nrml_TERT, type="raw", what="perBase")) %>%
+  mutate(locs=start(nrml_TERT)) %>%
+  gather(key=samp, value=meth, -locs)
+
+list.files(baavindir)
+IDs=c("W1", "W2", "W3")
+wro_DATA=read.bismark(files=file.path(baavindir, paste0(IDs, ".bismark.mod.cov")), sampleNames=IDs,
+                      rmZeroCov=TRUE, fileType="cov", strandCollapse=FALSE)
+inregion=overlapsAny(granges(wro_DATA), tertpromoter, type="within")
+goodcov=rowSums(getCoverage(wro_DATA, type="Cov", what="perBase")>mincov)   #==3
+wro_TERT=wro_DATA[(inregion & goodcov),]
+wro_METH=as.tibble(getMeth(wro_TERT, type="raw", what="perBase")) %>%
+  mutate(locs=start(wro_TERT)) %>%
+  gather(key=samp, value=meth, -locs)
+
+IDs=c("F1", "F2", "F3")
+ftc133_DATA=read.bismark(files=file.path(baavindir, paste0(IDs, ".bismark.mod.cov")), sampleNames=IDs,
+                         rmZeroCov=TRUE, fileType="cov", strandCollapse=FALSE)
+inregion=overlapsAny(granges(ftc133_DATA), tertpromoter, type="within")
+goodcov=rowSums(getCoverage(ftc133_DATA, type="Cov", what="perBase")>mincov)   #==3
+ftc133_TERT=ftc133_DATA[(inregion & goodcov),]
+ftc133_METH=as.tibble(getMeth(ftc133_TERT, type="raw", what="perBase")) %>%
+  mutate(locs=start(ftc133_TERT)) %>%
+  gather(key=samp, value=meth, -locs)
+
+IDs=c("H1", "H2", "H3")
+ftc238_DATA=read.bismark(files=file.path(baavindir, paste0(IDs, ".bismark.mod.cov")), sampleNames=IDs,
+                         rmZeroCov=TRUE, fileType="cov", strandCollapse=FALSE)
+inregion=overlapsAny(granges(ftc238_DATA), tertpromoter, type="within")
+goodcov=rowSums(getCoverage(ftc238_DATA, type="Cov", what="perBase")>mincov)   #==3
+ftc238_TERT=ftc238_DATA[(inregion & goodcov),]
+ftc238_METH=as.tibble(getMeth(ftc238_TERT, type="raw", what="perBase")) %>%
+  mutate(locs=start(ftc238_TERT)) %>%
+  gather(key=samp, value=meth, -locs)
+
+IDs=c("T1", "T2", "T3")
+raw_DATA=read.bismark(files=file.path(baavindir, paste0(IDs, ".bismark.mod.cov")), sampleNames=IDs,
+        rmZeroCov=TRUE, fileType="cov", strandCollapse=FALSE)
+inregion=overlapsAny(granges(raw_DATA), tertpromoter, type="within")
+goodcov=rowSums(getCoverage(raw_DATA, type="Cov", what="perBase")>mincov)   #==3
+raw_TERT=raw_DATA[(inregion & goodcov),]
+tpc1_METH=as.tibble(getMeth(raw_TERT, type="raw", what="perBase")) %>%
+  mutate(locs=start(raw_TERT)) %>%
+  gather(key=samp, value=meth, -locs)
+
+IDs=c("B1", "B2", "B3")
+raw_DATA=read.bismark(files=file.path(baavindir, paste0(IDs, ".bismark.mod.cov")), sampleNames=IDs,
+                      rmZeroCov=TRUE, fileType="cov", strandCollapse=FALSE)
+inregion=overlapsAny(granges(raw_DATA), tertpromoter, type="within")
+goodcov=rowSums(getCoverage(raw_DATA, type="Cov", what="perBase")>mincov)   #==3
+raw_TERT=raw_DATA[(inregion & goodcov),]
+bcpap_METH=as.tibble(getMeth(raw_TERT, type="raw", what="perBase")) %>%
+  mutate(locs=start(raw_TERT)) %>%
+  gather(key=samp, value=meth, -locs)
+
+
+###### Make PLot elements
+tss_points=c(1295162)
+tss_h=c(1.0)
+tert_tss <- data_frame(hg19_cood= tss_points, meth = tss_h )
+
+tert_tss
+#by defining the x-axis, we ensure our plots line up:
+#baavin's original plot region
+xaxis_lim = c(1294987, 1295824)
+y_axis=c(0, 1.2)
+
+# here is 500nt flanknigng the 8kb betnw guideRNAs in hg19:
+##chr5	1288199	1297005
+#xaxis_lim = c(1288199,	1297005)
+color_array=c("forestgreen" ,  "firebrick2" , "dodgerblue2" , 'darkorchid2', 'cyan2' ,'goldenrod3' , 'palevioletred3' )
+
+#generating NP plot element  
+np_plot=ggplot()+  
+  geom_point(data=tert_tss, aes(x=hg19_cood, y=meth), size=0.5, color="black")+
+  xlim(xaxis_lim)+ylim(y_axis) +  
+  geom_point(data=meth_nrml, aes(x=hg19_cood, y=meth), color=color_array[1], size=1.5) + 
+  geom_smooth(data=meth_nrml, aes(x=hg19_cood, y=meth), color=color_array[1]  ,span=.1, se=FALSE , method='loess', size=1.5) + 
+#  geom_point(data=meth_wro, aes(x=hg19_cood, y=meth), color=color_array[4], size=1.5) + 
+#  geom_smooth(data=meth_wro,aes(x=hg19_cood, y=meth),  color=color_array[4]  ,span=.1, se=FALSE , method='loess', size=1.5) + 
+#  geom_point(data=meth_ftc133,aes(x=hg19_cood, y=meth),  color=color_array[2], size=1.5) + 
+#  geom_smooth(data=meth_ftc133, aes(x=hg19_cood, y=meth), color=color_array[2]  ,span=.1, se=FALSE , method='loess', size=1.5) + 
+#  geom_point(data=meth_ftc238,aes(x=hg19_cood, y=meth),  color=color_array[1], size=1.5) + 
+#  geom_smooth(data=meth_ftc238, aes(x=hg19_cood, y=meth), color=color_array[1]  ,span=.1, se=FALSE , method='loess', size=1.5)
+  geom_point(data=meth_bcpap, aes(x=hg19_cood, y=meth),color=color_array[2], size=1.5) + 
+  geom_smooth( data=meth_bcpap, aes(x=hg19_cood, y=meth),color=color_array[2], span=.1, se=FALSE , method='loess', size=1.5) + 
+  geom_point(data=meth_tpc1, aes(x=hg19_cood, y=meth), color=color_array[3], size=1.5) + 
+  geom_smooth( data=meth_tpc1,aes(x=hg19_cood, y=meth), color=color_array[3], span=.1, se=FALSE , method='loess', size=1.5) 
+
+
+
+bs_plot=ggplot() + xlim(xaxis_lim) +   ylim(y_axis)  +
+        geom_point(data=nrml_METH, aes(x=locs, y=meth ), show.legend = TRUE, alpha=0.6, color=color_array[1], size=1.5) +
+        geom_smooth(data=nrml_METH, aes(x=locs, y=meth), span=.1, se=FALSE, color=color_array[1], size=1.5) +
+  #    geom_point(data=wro_METH, aes(x=locs, y=meth), show.legend = TRUE, alpha=0.6,color=color_array[4], size=1.5) +
+  #     geom_smooth(data=wro_METH, aes(x=locs, y=meth), span=.1, se=FALSE, color=color_array[4], size=1.5) +
+  #     geom_point(data=ftc133_METH, aes(x=locs, y=meth), show.legend = TRUE, alpha=0.6,color=color_array[2], size=1.5) +
+ #       geom_smooth(data=ftc133_METH, aes(x=locs, y=meth), span=.1, se=FALSE, color=color_array[2], size=1.5) +
+  #      geom_point(data=ftc238_METH, aes(x=locs, y=meth), show.legend = TRUE, alpha=0.6,color=color_array[1], size=1.5) +
+   #     geom_smooth(data=ftc238_METH, aes(x=locs, y=meth), span=.1, se=FALSE, color=color_array[1], size=1.5)  
+         geom_point(data=tpc1_METH, aes(x=locs, y=meth), show.legend = TRUE, alpha=0.6,color=color_array[3], size=1.5) +
+         geom_smooth(data=tpc1_METH, aes(x=locs, y=meth), span=.1, se=FALSE, color=color_array[3], size=1.5) +
+         geom_point(data=bcpap_METH, aes(x=locs, y=meth), show.legend = TRUE, alpha=0.6,color=color_array[2], size=1.5) +
+         geom_smooth(data=bcpap_METH, aes(x=locs, y=meth), span=.1, se=FALSE, color=color_array[2], size=1.5)
+
+list.files()
+amp_file="TERT_aplicons.csv"
+
+amplz=read_csv(amp_file, col_names=c("name", "beg","fin",'height'))
+
+bs_plot <- bs_plot+  geom_segment(data=amplz, aes(x=beg, y=height, xend=fin, yend=height), size = 2, color='chocolate1'  ) +
+    geom_text(data=amplz, aes(x=(beg+fin)/2, y=height, label=name)) 
+
+pdf( paste0(exp_name, '.pdf'), useDingbats=FALSE)
+print(plot_grid(np_plot, bs_plot, labels=c( paste0("Nanopore_", exp_name),  
+                    paste0("iLLumina_", exp_name)), nrow=2, align="v"))
+dev.off()
