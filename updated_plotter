@@ -1,4 +1,4 @@
-### plots both nanopolish data ( after extraction as described in reade) 
+### plots both nanopolish data ( after extraction as described in README) 
 ### also pplots bisulfite data .. used the "xxx.cov" file produced in bismark analysis 
 
 capture.output( suppressMessages(library(tidyverse)))
@@ -125,6 +125,7 @@ y_axis=c(0, 1.2)
 # here is 500nt flanknigng the 8kb betnw guideRNAs in hg19:
 ##chr5	1288199	1297005
 #xaxis_lim = c(1288199,	1297005)
+
 color_array=c("forestgreen" ,  "firebrick2" , "dodgerblue2" , 'darkorchid2', 'cyan2' ,'goldenrod3' , 'palevioletred3' )
 
 #generating NP plot element  
